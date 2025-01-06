@@ -1,5 +1,5 @@
 from flask import Flask, render_template, request, jsonify
-from agents import SupplierAgent, BuyerAgent, CommunicationManager
+from agents import SupplierAgent, BuyerAgent, CommunicationManager, Logger
 import threading
 
 app = Flask(__name__)
@@ -25,9 +25,13 @@ def index():
 @app.route('/negotiate', methods=['POST'])
 def negotiate():
     data = request.json
-    offer = data['offer']
+    offer = {"type": data['type'], "price": data['price'], "destination": data['destination']}
+
+
+    # Assuming buyer.negotiate accepts a callback for logging
     response = buyer.negotiate("supplier_1", offer, 'localhost', comm_manager.socket.getsockname()[1])
-    return jsonify(response)
+
+    return jsonify({"response": response, "logs": Logger.logs})
 
 if __name__ == "__main__":
     app.run(debug=True)

@@ -3,6 +3,14 @@ import json
 from threading import Thread
 import random
 
+class Logger:
+    logs = []
+
+    @staticmethod
+    def log(message):
+        print(message)
+        Logger.logs.append(message)
+
 # Classe de base pour tous les agents
 class Agent:
     def __init__(self, agent_id, agent_type):
@@ -36,23 +44,33 @@ class SupplierAgent(Agent):
         """Logique de négociation pour les fournisseurs."""
         service = next((s for s in self.services if s["type"] == offer["type"]), None)
         if service :
+            Logger.log(f"Supplier {self.agent_id} received offer: {offer}")
             interval = abs(offer["price"] - service["price"]) / service["price"] * 100
             if interval > 40:
-                return {"buyer_id": buyer_id, "status": "rejected", "message": "Offer too far from expected price"}
+                Logger.log(f"Offer rejected by {self.agent_id} due to large price difference")
+                return {"buyer_id": buyer_id, "status": "rejected", "message": "Offer too far from expected price","logs":Logger.logs}
+
             #si l'offre est plus basse que le prix, proposer une contre offre avec une légère augmentation
             if offer["price"] < service["price"]:
+                Logger.log(f"Counter offer proposed by {self.agent_id}")
                 counter_price = offer["price"] * 1.05  # augmentation de 5%
+
                 if counter_price > service["price"]:
                     counter_price = service["price"]
+
+                Logger.log(f"Counter offer: {counter_price}")
+
                 counter_offer = {"type": offer["type"], "price":  round(counter_price, 2)}
                 print(f"Counter offer: {counter_offer} proposed by {self.agent_id}")
                 return {"buyer_id": buyer_id, "status": "counter_offer",
-                        "message": f"Counter offer from {self.agent_id}", "offer": counter_offer}
+                        "message": f"Counter offer from {self.agent_id}", "offer": counter_offer,"logs":Logger.logs}
             else:
-                return {"buyer_id": buyer_id, "status": "accepted", "message": f"Offer accepted by {self.agent_id}"}
+                Logger.log(f"Offer accepted by {self.agent_id}")
+                return {"buyer_id": buyer_id, "status": "accepted", "message": f"Offer accepted by {self.agent_id}", "logs":Logger.logs}
 
         else:
-            return {"buyer_id": buyer_id, "status": "rejected", "message": f"Service not found in {self.agent_id}"}
+            Logger.log(f"Service not found in {self.agent_id}")
+            return {"buyer_id": buyer_id, "status": "rejected", "message": f"Service not found in {self.agent_id}", "logs":Logger.logs}
 
 
 
@@ -76,17 +94,21 @@ class BuyerAgent(Agent):
         message = {"source_id": self.agent_id, "target_id": supplier_id,
                    "content": {"action": "negotiate", "offer": offer}}
 
+        Logger.log(f"Buyer {self.agent_id} sending offer: {offer}")
+
         response = self.communicate(message, supplier_host, supplier_port)
 
         if response.get("status") == "counter_offer":
             #Vérifie les contraintes avant d'accepter  l'offre
             counter_offer = response["offer"]
             if counter_offer["price"] <= self.constraints["max_price"]:
+                Logger.log(f"Counter offer: {counter_offer} accepted by {self.agent_id}")
                 print(f"Counter offer: {counter_offer} accepted by {self.agent_id}")
-                return {"status": "accepted", "message": "Counter-offer accepted"}
+                return {"status": "accepted", "message": "Counter-offer accepted","logs":Logger.logs}
             else:
                 #si la contre-offre dépasse le budget, on propose une offre avec une légère réduction
                 adjusted_offer = {"price": self.constraints["max_price"] * 0.95,"type": counter_offer["type"]}  # réduction de 5%
+                Logger.log(f"Counter offer rejected. New Adjusted offer: {adjusted_offer} proposed by {self.agent_id}")
                 print(f"Counter offer rejected. New Adjusted offer: {adjusted_offer} proposed by {self.agent_id}")
                 #return {"status": "counter_offer", "message": "New offer sent", "offer": adjusted_offer}
                 return self.negotiate(supplier_id, adjusted_offer, supplier_host, supplier_port)
@@ -94,15 +116,18 @@ class BuyerAgent(Agent):
         elif response.get("status") == "accepted":
             # Si l'offre initiale est acceptée, vérifier les contraintes
             if offer["price"] <= self.constraints["max_price"]:
+                Logger.log(f"Offer: {offer} accepted by {self.agent_id}")
                 print(f"Offer: {offer} accepted by {self.agent_id}")
-                return {"status": "accepted", "message": "Offer accepted"}
+                return {"status": "accepted", "message": "Offer accepted","logs":Logger.logs}
             else:
+                Logger.log(f"Offer: {offer} rejected by {self.agent_id} due to constraints")
                 print(f"Offer: {offer} rejected by {self.agent_id} due to constraints")
-                return {"status": "rejected", "message": "Offer rejected due to constraints"}
+                return {"status": "rejected", "message": "Offer rejected due to constraints","logs":Logger.logs}
 
         else:
+            Logger.log(f"Offer rejected by {self.agent_id}")
             print(f"Offer rejected by {self.agent_id}")
-            return {"status": "rejected", "message": "Offer rejected"}
+            return {"status": "rejected", "message": "Offer rejected","logs":Logger.logs}
 
 
 
