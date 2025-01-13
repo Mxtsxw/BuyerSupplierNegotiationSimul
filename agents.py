@@ -42,7 +42,7 @@ class SupplierAgent(Agent):
 
     def negotiate(self,buyer_id,offer):
         """Logique de négociation pour les fournisseurs."""
-        service = next((s for s in self.services if s["type"] == offer["type"]), None)
+        service = next((s for s in self.services if s["type"] == offer["type"] and s["destination"] == offer["destination"]), None)
         if service :
             Logger.log(f"Supplier {self.agent_id} received offer: {offer}")
             interval = abs(offer["price"] - service["price"]) / service["price"] * 100

@@ -7,7 +7,6 @@
     <!-- Bootstrap CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.1/dist/css/bootstrap.min.css" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.1/dist/js/bootstrap.bundle.min.js"></script>
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 <body>
     <div class="container mt-4">
@@ -15,26 +14,70 @@
             <!-- Buyer Column -->
             <div class="col-md-3 border p-3">
                 <h4>Buyer</h4>
-                <p><strong>Preferences:</strong> {{ buyer.preferences }}</p>
-                <p><strong>Constraints:</strong> {{ buyer.constraints }}</p>
+                <h5 class="mt-3">Preferences</h5>
+                <div class="mb-3">
+                    <label for="buyer-preferred-companies" class="form-label">Preferred Companies</label>
+                    <input type="text" class="form-control" id="buyer-preferred-companies" value="{{ buyer.preferences['preferred_companies'][0] }}">
+                </div>
+                <div class="mb-3">
+                    <label for="buyer-budget" class="form-label">Budget</label>
+                    <input type="number" class="form-control" id="buyer-budget" value="{{ buyer.preferences['budget'] }}">
+                </div>
+
+                <h5 class="mt-4">Constraints</h5>
+                <div class="mb-3">
+                    <label for="buyer-max-price" class="form-label">Max Price</label>
+                    <input type="number" class="form-control" id="buyer-max-price" value="{{ buyer.constraints['max_price'] }}">
+                </div>
+                <div class="mb-3">
+                    <label for="buyer-latest-date" class="form-label">Latest Date</label>
+                    <input type="date" class="form-control" id="buyer-latest-date" value="{{ buyer.constraints['latest_date'] }}">
+                </div>
+                <button id="update-preferences-btn" class="btn btn-primary mt-3">Update Preferences & Constraints</button>
+            </div>
+
+            <!-- Offer Form Below Buyer -->
+            <div class="col-md-3 border p-3">
+                <h5 class="mt-4">Offer Details</h5>
+                <div class="mb-3">
+                    <label for="offer-type" class="form-label">Offer Type</label>
+                    <input type="text" class="form-control" id="offer-type" placeholder="Enter offer type" value="flight">
+                </div>
+                <div class="mb-3">
+                    <label for="offer-price" class="form-label">Price</label>
+                    <input type="number" class="form-control" id="offer-price" placeholder="Enter price">
+                </div>
+                <div class="mb-3">
+                    <label for="offer-destination" class="form-label">Destination</label>
+                    <input type="text" class="form-control" id="offer-destination" placeholder="Enter destination" value="Paris">
+                </div>
             </div>
 
             <!-- Output Column -->
             <div class="col-md-6 border p-3">
                 <h4>Negotiation Log</h4>
                 <div id="log" class="border rounded bg-light p-2" style="height: 300px; overflow-y: scroll;">
-<!--                    <ul id="logs">-->
-<!--                        {% for log in logs %}-->
-<!--                        <li>{{ log }}</li>-->
-<!--                        {% endfor %}-->
-<!--                    </ul>-->
                 </div>
+                <button id="clear-logs-btn" class="btn btn-danger mt-3">Clear Logs</button>
             </div>
 
             <!-- Supplier Column -->
             <div class="col-md-3 border p-3">
                 <h4>Supplier</h4>
-                <p><strong>Services:</strong> {{ supplier.services }}</p>
+                <h5 class="mt-3">Services</h5>
+                <div id="service-list">
+                    {% for service in supplier.services %}
+                        <div class="service-item mb-3">
+                            <label for="service-type" class="form-label">Service Type</label>
+                            <input type="text" class="form-control service-type" value="{{ service['type'] }}">
+                            <label for="service-price" class="form-label">Price</label>
+                            <input type="number" class="form-control service-price" value="{{ service['price'] }}">
+                            <label for="service-destination" class="form-label">Destination</label>
+                            <input type="text" class="form-control service-destination" value="{{ service['destination'] }}">
+                        </div>
+                    {% endfor %}
+                </div>
+                <button class="btn btn-primary mt-3" id="update-services-btn">Update Services</button>
             </div>
         </div>
 
@@ -46,12 +89,26 @@
     </div>
 
     <script>
+        // Initialize maxPrice
+        let maxPrice = parseFloat(document.getElementById('buyer-max-price').value);
+
+        alert("Le prix maximum est de : " + maxPrice);
+
+        // Set the max attribute for offer price input field
+        document.getElementById('offer-price').setAttribute('max', maxPrice);
+
+        // Start negotiation button
         document.getElementById('negotiate-btn').addEventListener('click', function() {
             const offer = {
-                type: "flight",
-                price: 750,
-                destination: "Paris"
+                type: document.getElementById('offer-type').value,
+                price: parseFloat(document.getElementById('offer-price').value),
+                destination: document.getElementById('offer-destination').value
             };
+
+            if (offer.price > maxPrice) {
+                alert("The price cannot exceed the buyer's constraints.");
+                return;
+            }
 
             fetch('/negotiate', {
                 method: 'POST',
@@ -70,6 +127,105 @@
             })
             .catch(error => console.error('Error:', error));
         });
+
+        // Clear logs button
+        document.getElementById('clear-logs-btn').addEventListener('click', function() {
+            const logElement = document.getElementById('log');
+            logElement.innerHTML = '';
+        });
+
+        // Update preferences and constraints button
+        document.getElementById('update-preferences-btn').addEventListener('click', function() {
+
+            const preferences = {
+                preferred_companies: document.getElementById('buyer-preferred-companies').value.split(','),
+                budget: parseFloat(document.getElementById('buyer-budget').value)
+            };
+
+            const constraints = {
+                max_price: parseFloat(document.getElementById('buyer-max-price').value),
+                latest_date: document.getElementById('buyer-latest-date').value
+            };
+            maxPrice = constraints.max_price;
+
+            fetch('/update_preferences_constraints', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ preferences: preferences, constraints: constraints })
+            })
+            .then(response => response.json())
+            .then(data => {
+                alert('Preferences and constraints updated successfully!');
+            })
+            .catch(error => console.error('Error updating preferences and constraints:', error));
+        });
+
+        function reloadPreferencesConstraints() {
+            fetch('/get_preferences_constraints')
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById('buyer-preferred-companies').value = data.preferences.preferred_companies.join(',');
+                document.getElementById('buyer-budget').value = data.preferences.budget;
+                document.getElementById('buyer-max-price').value = data.constraints.max_price;
+                document.getElementById('buyer-latest-date').value = data.constraints.latest_date;
+            })
+            .catch(error => console.error('Error fetching updated preferences and constraints:', error));
+        }
+
+        // Update services button
+        document.getElementById('update-services-btn').addEventListener('click', function() {
+            const services = [];
+            document.querySelectorAll('.service-item').forEach(function(item) {
+                const type = item.querySelector('.service-type').value;
+                const price = parseFloat(item.querySelector('.service-price').value);
+                const destination = item.querySelector('.service-destination').value;
+                services.push({ type, price, destination });
+            });
+
+            fetch('/update_services', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ services: services })
+            })
+            .then(response => response.json())
+            .then(data => {
+                alert('Services updated successfully!');
+                reloadServices();
+            })
+            .catch(error => {
+                console.error('Error updating services:', error);
+            });
+        });
+
+        function reloadServices() {
+            fetch('/get_services')
+            .then(response => response.json())
+            .then(data => {
+                const serviceList = document.getElementById('service-list');
+                serviceList.innerHTML = '';
+
+                data.services.forEach(service => {
+                    const serviceItem = document.createElement('div');
+                    serviceItem.classList.add('service-item', 'mb-3');
+
+                    serviceItem.innerHTML = `
+                        <label for="service-type" class="form-label">Service Type</label>
+                        <input type="text" class="form-control service-type" value="${service.type}">
+                        <label for="service-price" class="form-label">Price</label>
+                        <input type="number" class="form-control service-price" value="${service.price}">
+                        <label for="service-destination" class="form-label">Destination</label>
+                        <input type="text" class="form-control service-destination" value="${service.destination}">
+                    `;
+
+                    serviceList.appendChild(serviceItem);
+                });
+            })
+            .catch(error => console.error('Error fetching updated services:', error));
+        }
     </script>
 </body>
 </html>
