@@ -1,33 +1,91 @@
-from flask import Flask, render_template, request, jsonify
-from agents import SupplierAgent, BuyerAgent, CommunicationManager
-import threading
+from flask import Flask, render_template, request
+
+from agents.buyer import BuyerAgent
+from agents.supplier import SupplierAgent
+from logs.logger import Logger
+from negotitation.strategy import DestinationEnum, CompanyEnum, find_optimal_coalition_IDP
 
 app = Flask(__name__)
 
-# Initialize agents and communication manager
-comm_manager = CommunicationManager()
-threading.Thread(target=comm_manager.start, daemon=True).start()
+default_supplier = SupplierAgent(name="Supplier1",
+                  services=[
+        {
+            "name": "flight_1",
+            "type": "flight",
+            "destination": DestinationEnum.PARIS,
+            "price": 400
+        }
+    ])
 
-supplier = SupplierAgent("supplier_1")
-buyer = BuyerAgent("buyer_1")
-comm_manager.register_agent(supplier)
-comm_manager.register_agent(buyer)
+default_buyer = BuyerAgent(
+    name="Buyer1",
+    constraints={
+        "max_price": 800,
+        "destination": DestinationEnum.PARIS,
+        "last_date": "2024-12-01"
+    },
+    preferences={
+        "budget": 100,
+        "preferred_company": CompanyEnum.RAYAN_AIR
+    }
+)
 
-# Configure supplier services and buyer preferences
-supplier.add_service({"type": "flight", "price": 1200, "destination": "Paris"})
-buyer.set_preferences({"preferred_companies": ["Air France"], "budget": 600})
-buyer.set_constraints({"max_price": 800, "latest_date": "2023-12-31"})
+buyers_list = [default_buyer]
 
-@app.route('/')
+@app.route('/', methods=['GET'])
 def index():
-    return render_template('index.html', supplier=supplier, buyer=buyer, logs=[])
+    Logger.clear()
+    return render_template(
+        'index.html',
+        supplier=default_supplier.to_dict(),
+        buyers=[b.to_dict() for b in buyers_list],
+        logs=[]
+    )
 
-@app.route('/negotiate', methods=['POST'])
+@app.route('/negotiate', methods=['GET'])
 def negotiate():
-    data = request.json
-    offer = data['offer']
-    response = buyer.negotiate("supplier_1", offer, 'localhost', comm_manager.socket.getsockname()[1])
-    return jsonify(response)
+    offer = {"name": "flight_1", "type": "flight", "price": 300}
 
-if __name__ == "__main__":
+    Logger.log(default_buyer.negotiate(default_supplier, "flight", offer))
+
+    return render_template(
+        'index.html',
+        supplier=default_supplier.to_dict(),
+        buyers=[b.to_dict() for b in buyers_list],
+        logs=Logger.logs
+    )
+
+@app.route("/logs/clear", methods=['GET'])
+def clear_logs():
+    Logger.clear()
+    return render_template(
+        'index.html',
+        supplier=default_supplier.to_dict(),
+        buyers=[b.to_dict() for b in buyers_list],
+        logs=Logger.logs
+    )
+
+@app.route("/buyer/add", methods=['POST'])
+def add_buyer():
+    buyer_name = request.form.get('buyer_name')
+    buyer = BuyerAgent(name=buyer_name)
+    buyers_list.append(buyer)
+    return render_template(
+        'index.html',
+        supplier=default_supplier.to_dict(),
+        buyers=[b.to_dict() for b in buyers_list],
+        logs=Logger.logs
+    )
+
+@app.route("/coalition", methods=['GET'])
+def coalition():
+    # Find the optimal coalition
+    best_coalition, best_value = find_optimal_coalition_IDP(buyers_list)
+    Logger.log()
+    return render_template(
+        'coalition.html',
+        buyers=[b.to_dict() for b in buyers_list]
+    )
+
+if __name__ == '__main__':
     app.run(debug=True)

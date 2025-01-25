@@ -1,86 +1,389 @@
 <!DOCTYPE html>
 <html lang="en">
-    <head>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Negotiation Simulator</title>
-        <!-- Bootstrap CSS -->
-        <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.1/dist/css/bootstrap.min.css" rel="stylesheet">
-        <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.1/dist/js/bootstrap.bundle.min.js"></script>
-        <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
-    </head>
-    <body>
-        <div class="container mt-4">
-            <div class="row">
-                <!-- Buyer Column -->
-                <div class="col-md-3 border p-3">
-                    <h4>Buyer</h4>
-                    <p><strong>Preferences:</strong> {{ buyer.preferences }}</p>
-                    <p><strong>Constraints:</strong> {{ buyer.constraints }}</p>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Negotiation Simulator</title>
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.1/dist/js/bootstrap.bundle.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-icons/1.8.1/font/bootstrap-icons.min.css">
+</head>
+<body>
+
+    <div class="container mt-4">
+        <div class="row">
+            <!-- Buyer Column -->
+            <div class="col-md-3">
+                <div class="border p-3 d-flex justify-content-between">
+                    <h4>Buyers</h4>
+                    <button class="btn btn-primary" id="add-buyer">+</button>
                 </div>
-    
-                <!-- Output Column -->
-                <div class="col-md-6 border p-3">
-                    <h4>Negotiation Log</h4>
-                    <div id="log" class="border rounded bg-light p-2" style="height: 300px; overflow-y: auto;">
-                        {% for log in logs %}
-                            <p>{{ log }}</p>
-                        {% endfor %}
-                    </div>
-                </div>
-    
-                <!-- Supplier Column -->
-                <div class="col-md-3 border p-3">
-                    <h4>Supplier</h4>
-                    <ul>
-                        {% for service in supplier.services %}
-                            <li>{{ service }}</li>
+                <div class="border p-3">
+                    <ul id="buyer-list" class="list-group">
+                        <!-- Contains list of buyers -->
+                        {% for buyer in buyers %}
+                            <div class="card mb-3">
+                                <div class="card-body d-flex justify-content-between align-items-center">
+                                    <span data-id="{{ buyer.name }}" style="cursor: pointer;">{{ buyer.name }}</span>
+                                    <i class="bi bi-trash text-danger remove-buyer-icon" data-id="{{ buyer.name }}" style="cursor: pointer;"></i>
+                                </div>
+                            </div>
                         {% endfor %}
                     </ul>
                 </div>
             </div>
-    
-            <div class="row mt-4">
-                <div class="col-md-12">
-                    <h5>Make an Offer</h5>
-                    <form id="offer-form" class="row g-3">
-                        <div class="col-md-3">
-                            <label for="type" class="form-label">Type:</label>
-                            <input type="text" class="form-control" id="type" name="type" placeholder="e.g., flight" required>
+
+            <!-- Output Column -->
+            <div class="col-md-6 border p-3">
+                <h4>Negotiation Log</h4>
+                <div id="log" class="border rounded bg-light p-2" style="height: 300px; overflow-y: scroll;">
+                    <!-- Contains logs output -->
+                    {% for log in logs %}
+                        <p>{{ log }}</p>
+                    {% endfor %}
+                </div>
+                <div class="mt-4">
+                    <button id="clear-logs-btn" class="btn btn-danger" onclick="window.location.href='/'">Clear Logs</button>
+                    <button id="negotiate-btn" class="btn btn-primary" onclick="window.location.href='/negotiate'">Start Negotiation</button>
+                </div>
+            </div>
+
+
+            <!-- Supplier Column -->
+            <div class="col-md-3">
+                <div class="border p-3 d-flex justify-content-between">
+                    <h4>Supplier's Services</h4>
+                    <button class="btn btn-primary" id="add-service-btn">+</button>
+                </div>
+                <div class="border p-3">
+                    <ul id="buyer-list" class="list-group">
+                        <!-- Contains list of buyers -->
+                        {% for service in supplier.services %}
+                            <div data-id="{{ service.name }}" class="card mb-3">
+                                <div class="card-body d-flex justify-content-between align-items-center">
+                                    <span style="cursor: pointer;">{{ service.name }}</span>
+                                    <i class="bi bi-trash text-danger remove-service-icon" data-id="{{ service.name }}"
+                                       style="cursor: pointer;"></i>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Buyer Model -->
+    <div class="modal fade" id="addBuyerModal" tabindex="-1" aria-labelledby="addBuyerModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="addBuyerModalLabel">Add New Buyer</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <h5 class="">Name</h5>
+                    <div class="mb-3">
+                        <label for="agent_id" class="form-label">Buyer Name</label>
+                        <input type="text" class="form-control" id="agent_id" value="">
+                    </div>
+                    <h5 class="">Preferences</h5>
+                    <div class="mb-3">
+                        <label for="buyer-preferred-companies" class="form-label">Preferred Companies</label>
+                        <input type="text" class="form-control" id="buyer-preferred-companies" value="">
+                    </div>
+                    <div class="mb-3">
+                        <label for="buyer-budget" class="form-label">Budget</label>
+                        <input type="number" class="form-control" id="buyer-budget" value="">
+                    </div>
+
+                    <h5 class="mt-4">Constraints</h5>
+                    <div class="mb-3">
+                        <label for="buyer-max-price" class="form-label">Max Price</label>
+                        <input type="number" class="form-control" id="buyer-max-price" value="">
+                    </div>
+                    <div class="mb-3">
+                        <label for="buyer-latest-date" class="form-label">Latest Date</label>
+                        <input type="date" class="form-control" id="buyer-latest-date" value="">
+                    </div>
+                    <button id="add-buyer-btn" class="btn btn-primary mt-3 ">Add</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Service Modal -->
+    <div class="modal fade" id="addServiceModal" tabindex="-1" aria-labelledby="addServiceModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="addServiceModalLabel">Add New Service</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="add-service-form">
+                        <div class="mb-3">
+                            <label for="service-type" class="form-label">Service Type</label>
+                            <select class="form-select" id="service-type" required>
+                                <option value="1">Ticket</option>
+                            </select>
                         </div>
-                        <div class="col-md-3">
-                            <label for="price" class="form-label">Price:</label>
-                            <input type="number" class="form-control" id="price" name="price" placeholder="e.g., 1000" required>
+                        <div class="mb-3">
+                            <label for="service-price" class="form-label">Price</label>
+                            <input type="number" class="form-control" id="service-price" required>
                         </div>
-                        <div class="col-md-3">
-                            <label for="destination" class="form-label">Destination:</label>
-                            <input type="text" class="form-control" id="destination" name="destination" placeholder="e.g., Paris" required>
+                        <div class="mb-3">
+                            <label for="service-destination" class="form-label">Destination</label>
+                            <input type="text" class="form-control" id="service-destination" required>
                         </div>
-                        <div class="col-md-3 d-flex align-items-end">
-                            <button type="submit" class="btn btn-primary w-100">Negotiate</button>
-                        </div>
+                        <button type="submit" class="btn btn-primary">Add Service</button>
                     </form>
                 </div>
             </div>
         </div>
-    
-        <script>
-            document.getElementById('offer-form').addEventListener('submit', async (event) => {
-                event.preventDefault();
-                const type = document.getElementById('type').value;
-                const price = parseFloat(document.getElementById('price').value);
-                const destination = document.getElementById('destination').value;
-    
-                const response = await fetch('/negotiate', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ offer: { type, price, destination } })
-                });
-                const result = await response.json();
-                alert(JSON.stringify(result));
-                window.location.reload();
+    </div>
+
+    {#  Buyer Info Edit Modal  #}
+    <div class="modal fade" id="editBuyerModal" tabindex="-1" aria-labelledby="editBuyerModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="editBuyerModalLabel">Edit Buyer</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body p-3">
+                    <form id="edit-buyer-form">
+                        <div class="mb-3">
+                            <label for="edit-buyer-name" class="form-label">Name</label>
+                            <input type="text" class="form-control" id="edit-buyer-name" value="">
+                        </div>
+                        <div class="mb-3">
+                            <label for="edit-buyer-preferred-companies" class="form-label">Preferred Companies</label>
+                            <input type="text" class="form-control" id="edit-buyer-preferred-companies" value="">
+                        </div>
+                        <div class="mb-3">
+                            <label for="edit-buyer-budget" class="form-label">Budget</label>
+                            <input type="number" class="form-control" id="edit-buyer-budget" value="">
+                        </div>
+                        <div class="mb-3">
+                            <label for="edit-buyer-max-price" class="form-label">Max Price</label>
+                            <input type="number" class="form-control" id="edit-buyer-max-price" value="">
+                        </div>
+                        <div class="mb-3">
+                            <label for="edit-buyer-latest-date" class="form-label">Latest Date</label>
+                            <input type="date" class="form-control" id="edit-buyer-latest-date" value="">
+                        </div>
+                        <button type="submit" class="btn btn-primary">Save</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+    <script>
+        <!--    Retrieve backend variables    -->
+        const buyers = {{ buyers | tojson }};
+        const supplier = {{ supplier | tojson }};
+        const logs = {{ logs | tojson }};
+    </script>
+
+    <script>
+        // Open Add Buyer Modal
+        document.getElementById('add-buyer').addEventListener('click', function () {
+            const addBuyerModal = new bootstrap.Modal(document.getElementById('addBuyerModal'));
+            addBuyerModal.show();
+        });
+
+        // Open Add Service Modal
+        document.getElementById('add-service-btn').addEventListener('click', function () {
+            const addServiceModal = new bootstrap.Modal(document.getElementById('addServiceModal'));
+            addServiceModal.show();
+        });
+
+        // Add Buyer
+        document.getElementById('add-buyer-btn').addEventListener('click', function () {
+            const buyerName = document.getElementById('agent_id').value;
+            const buyerPreferredCompanies = document.getElementById('buyer-preferred-companies').value;
+            const buyerBudget = document.getElementById('buyer-budget').value;
+            const buyerMaxPrice = document.getElementById('buyer-max-price').value;
+            const buyerLatestDate = document.getElementById('buyer-latest-date').value;
+
+            const data = {
+                agent_id: buyerName,
+                preferred_companies: buyerPreferredCompanies,
+                budget: buyerBudget,
+                max_price: buyerMaxPrice,
+                latest_date: buyerLatestDate
+            };
+
+            fetch('/buyer/add', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(data)
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    alert('Buyer added successfully!');
+                    const addBuyerModal = bootstrap.Modal.getInstance(document.getElementById('addBuyerModal'));
+                    addBuyerModal.hide();
+                } else {
+                    alert('Error adding buyer: ' + data.message);
+                }
+            })
+            .catch(error => console.error('Error:', error));
+        });
+
+        //
+        document.getElementById('add-service-form').addEventListener('submit', function (e) {
+            e.preventDefault();
+            const serviceType = document.getElementById('service-type').value;
+            const servicePrice = document.getElementById('service-price').value;
+            const serviceDestination = document.getElementById('service-destination').value;
+
+            const data = {
+                service_type: serviceType,
+                price: servicePrice,
+                destination: serviceDestination
+            };
+
+            fetch('/service/add', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(data)
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    alert('Service added successfully!');
+                    const addServiceModal = bootstrap.Modal.getInstance(document.getElementById('addServiceModal'));
+                    addServiceModal.hide();
+                } else {
+                    alert('Error adding service: ' + data.message);
+                }
+            })
+            .catch(error => console.error('Error:', error));
+        });
+
+        const launchNegotiate = () => {
+            /**
+             * Launch negotiation
+             */
+            fetch('/negotiate', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({})
+            })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === 'success') {
+                        alert('Negotiation started successfully!');
+                    } else {
+                        alert('Error starting negotiation: ' + data.message);
+                    }
+                })
+                .catch(error => console.error('Error:', error));
+        }
+
+        // Open Edit Buyer Modal
+        const editBuyerModal = new bootstrap.Modal(document.getElementById('editBuyerModal'));
+        const editBuyerForm = document.getElementById('edit-buyer-form');
+        const editBuyerName = document.getElementById('edit-buyer-name');
+        const editBuyerPreferredCompanies = document.getElementById('edit-buyer-preferred-companies');
+        const editBuyerBudget = document.getElementById('edit-buyer-budget');
+        const editBuyerMaxPrice = document.getElementById('edit-buyer-max-price');
+        const editBuyerLatestDate = document.getElementById('edit-buyer-latest-date');
+
+        const openEditBuyerModal = (buyer) => {
+            editBuyerName.value = buyer.name;
+            editBuyerPreferredCompanies.value = buyer.preferences.preferred_company;
+            editBuyerBudget.value = buyer.preferences.budget;
+            editBuyerMaxPrice.value = buyer.constraints.max_price;
+            editBuyerLatestDate.value = buyer.constraints.last_date;
+            console.log(buyer);
+            editBuyerModal.show();
+        }
+
+        // Event listener on buyer list
+        document.querySelectorAll('#buyer-list span').forEach(card => {
+            card.addEventListener('click', function () {
+                const buyerName = card.getAttribute('data-id');
+                const buyer = buyers.find(buyer => buyer.name === buyerName);
+                openEditBuyerModal(buyer);
             });
-        </script>
-    </body>
-    
+        });
+
+        // Save Edited Buyer
+        editBuyerForm.addEventListener('submit', function (e) {
+            e.preventDefault();
+            const buyerName = editBuyerName.value;
+            const buyerPreferredCompanies = editBuyerPreferredCompanies.value;
+            const buyerBudget = editBuyerBudget.value;
+            const buyerMaxPrice = editBuyerMaxPrice.value;
+            const buyerLatestDate = editBuyerLatestDate.value;
+
+            const data = {
+                agent_id: buyerName,
+                preferred_companies: buyerPreferredCompanies,
+                budget: buyerBudget,
+                max_price: buyerMaxPrice,
+                latest_date: buyerLatestDate
+            };
+
+            fetch('/buyer/edit', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(data)
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    alert('Buyer updated successfully!');
+                    editBuyerModal.hide();
+                } else {
+                    alert('Error updating buyer: ' + data.message);
+                }
+            })
+            .catch(error => console.error('Error:', error));
+        });
+
+        // Remove Buyer
+        document.querySelectorAll('.remove-buyer-icon').forEach(icon => {
+            icon.addEventListener('click', function () {
+                const buyerName = icon.getAttribute('data-id');
+                const data = {
+                    agent_id: buyerName
+                };
+
+                fetch('/buyer/remove', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(data)
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === 'success') {
+                        alert('Buyer removed successfully!');
+                    } else {
+                        alert('Error removing buyer: ' + data.message);
+                    }
+                })
+                .catch(error => console.error('Error:', error));
+            });
+        });
+
+    </script>
+</body>
 </html>
