@@ -1,3 +1,4 @@
+from logs.logger import Logger
 from negotitation.strategy import supplier_evaluate_offer, ServiceTypeEnum, MessageTypeEnum
 
 class SupplierAgent:
@@ -5,9 +6,9 @@ class SupplierAgent:
     This class represents a supplier
     """
 
-    def __init__(self, name=None):
+    def __init__(self, name=None, services=None):
         self.name = name
-        self.services = []
+        self.services = services if services else []
 
     def add_service(self, service):
         self.services.append(service)
@@ -18,7 +19,7 @@ class SupplierAgent:
     def to_dict(self):
         return {
             'name': self.name,
-            'services': [service.to_dict() for service in self.services]
+            'services': self.services
         }
 
     def get_service(self, service_name):
@@ -36,16 +37,16 @@ class SupplierAgent:
 
         @return: Response to the buyer's offer
         """
-        print(f"Supplier {self.name} received an offer from Buyer {buyer.name}: {offer}")
+        Logger.log(f"Supplier {self.name} received an offer from Buyer {buyer.name}: {offer}")
 
         # Find the matching service in the catalog
         service = self.get_service(offer["name"])
 
         if not service:
-            print(f"Supplier {self.name}: Service '{offer['type']}' not found.")
+            Logger.log(f"Supplier {self.name}: Service '{offer['type']}' not found.")
             return {"status": "rejected", "reason": "Service not found"}
 
         # Evaluate the offer using the strategy
         response = supplier_evaluate_offer(service, offer)
-        print(f"Supplier {self.name}: Response to offer: {response}")
+        Logger.log(f"Supplier {self.name}: Response to offer: {response}")
         return response

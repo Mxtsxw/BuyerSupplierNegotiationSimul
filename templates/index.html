@@ -23,9 +23,9 @@
                     <ul id="buyer-list" class="list-group">
                         <!-- Contains list of buyers -->
                         {% for buyer in buyers %}
-                            <div data-id="{{ buyer.name }}" class="card mb-3">
+                            <div class="card mb-3">
                                 <div class="card-body d-flex justify-content-between align-items-center">
-                                    <span style="cursor: pointer;">{{ buyer.name }}</span>
+                                    <span data-id="{{ buyer.name }}" style="cursor: pointer;">{{ buyer.name }}</span>
                                     <i class="bi bi-trash text-danger remove-buyer-icon" data-id="{{ buyer.name }}" style="cursor: pointer;"></i>
                                 </div>
                             </div>
@@ -39,10 +39,13 @@
                 <h4>Negotiation Log</h4>
                 <div id="log" class="border rounded bg-light p-2" style="height: 300px; overflow-y: scroll;">
                     <!-- Contains logs output -->
+                    {% for log in logs %}
+                        <p>{{ log }}</p>
+                    {% endfor %}
                 </div>
                 <div class="mt-4">
-                    <button id="clear-logs-btn" class="btn btn-danger">Clear Logs</button>
-                    <button id="negotiate-btn" class="btn btn-primary">Start Negotiation</button>
+                    <button id="clear-logs-btn" class="btn btn-danger" onclick="window.location.href='/'">Clear Logs</button>
+                    <button id="negotiate-btn" class="btn btn-primary" onclick="window.location.href='/negotiate'">Start Negotiation</button>
                 </div>
             </div>
 
@@ -56,54 +59,59 @@
                 <div class="border p-3">
                     <ul id="buyer-list" class="list-group">
                         <!-- Contains list of buyers -->
-                        {% for service in services %}
-
+                        {% for service in supplier.services %}
+                            <div data-id="{{ service.name }}" class="card mb-3">
+                                <div class="card-body d-flex justify-content-between align-items-center">
+                                    <span style="cursor: pointer;">{{ service.name }}</span>
+                                    <i class="bi bi-trash text-danger remove-service-icon" data-id="{{ service.name }}"
+                                       style="cursor: pointer;"></i>
+                                </div>
+                            </div>
                         {% endfor %}
                     </ul>
                 </div>
-
             </div>
         </div>
     </div>
 
     <!-- Add Buyer Model -->
     <div class="modal fade" id="addBuyerModal" tabindex="-1" aria-labelledby="addBuyerModalLabel" aria-hidden="true">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="addBuyerModalLabel">Add New Buyer</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body">
-                <h5 class="">Name</h5>
-                <div class="mb-3">
-                    <label for="agent_id" class="form-label">Buyer Name</label>
-                    <input type="text" class="form-control" id="agent_id" value="">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="addBuyerModalLabel">Add New Buyer</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
-                <h5 class="">Preferences</h5>
-                <div class="mb-3">
-                    <label for="buyer-preferred-companies" class="form-label">Preferred Companies</label>
-                    <input type="text" class="form-control" id="buyer-preferred-companies" value="">
-                </div>
-                <div class="mb-3">
-                    <label for="buyer-budget" class="form-label">Budget</label>
-                    <input type="number" class="form-control" id="buyer-budget" value="">
-                </div>
+                <div class="modal-body">
+                    <h5 class="">Name</h5>
+                    <div class="mb-3">
+                        <label for="agent_id" class="form-label">Buyer Name</label>
+                        <input type="text" class="form-control" id="agent_id" value="">
+                    </div>
+                    <h5 class="">Preferences</h5>
+                    <div class="mb-3">
+                        <label for="buyer-preferred-companies" class="form-label">Preferred Companies</label>
+                        <input type="text" class="form-control" id="buyer-preferred-companies" value="">
+                    </div>
+                    <div class="mb-3">
+                        <label for="buyer-budget" class="form-label">Budget</label>
+                        <input type="number" class="form-control" id="buyer-budget" value="">
+                    </div>
 
-                <h5 class="mt-4">Constraints</h5>
-                <div class="mb-3">
-                    <label for="buyer-max-price" class="form-label">Max Price</label>
-                    <input type="number" class="form-control" id="buyer-max-price" value="">
+                    <h5 class="mt-4">Constraints</h5>
+                    <div class="mb-3">
+                        <label for="buyer-max-price" class="form-label">Max Price</label>
+                        <input type="number" class="form-control" id="buyer-max-price" value="">
+                    </div>
+                    <div class="mb-3">
+                        <label for="buyer-latest-date" class="form-label">Latest Date</label>
+                        <input type="date" class="form-control" id="buyer-latest-date" value="">
+                    </div>
+                    <button id="add-buyer-btn" class="btn btn-primary mt-3 ">Add</button>
                 </div>
-                <div class="mb-3">
-                    <label for="buyer-latest-date" class="form-label">Latest Date</label>
-                    <input type="date" class="form-control" id="buyer-latest-date" value="">
-                </div>
-                <button id="add-buyer-btn" class="btn btn-primary mt-3 ">Add</button>
             </div>
         </div>
     </div>
-</div>
 
     <!-- Add Service Modal -->
     <div class="modal fade" id="addServiceModal" tabindex="-1" aria-labelledby="addServiceModalLabel" aria-hidden="true">
@@ -130,6 +138,43 @@
                             <input type="text" class="form-control" id="service-destination" required>
                         </div>
                         <button type="submit" class="btn btn-primary">Add Service</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {#  Buyer Info Edit Modal  #}
+    <div class="modal fade" id="editBuyerModal" tabindex="-1" aria-labelledby="editBuyerModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="editBuyerModalLabel">Edit Buyer</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body p-3">
+                    <form id="edit-buyer-form">
+                        <div class="mb-3">
+                            <label for="edit-buyer-name" class="form-label">Name</label>
+                            <input type="text" class="form-control" id="edit-buyer-name" value="">
+                        </div>
+                        <div class="mb-3">
+                            <label for="edit-buyer-preferred-companies" class="form-label">Preferred Companies</label>
+                            <input type="text" class="form-control" id="edit-buyer-preferred-companies" value="">
+                        </div>
+                        <div class="mb-3">
+                            <label for="edit-buyer-budget" class="form-label">Budget</label>
+                            <input type="number" class="form-control" id="edit-buyer-budget" value="">
+                        </div>
+                        <div class="mb-3">
+                            <label for="edit-buyer-max-price" class="form-label">Max Price</label>
+                            <input type="number" class="form-control" id="edit-buyer-max-price" value="">
+                        </div>
+                        <div class="mb-3">
+                            <label for="edit-buyer-latest-date" class="form-label">Latest Date</label>
+                            <input type="date" class="form-control" id="edit-buyer-latest-date" value="">
+                        </div>
+                        <button type="submit" class="btn btn-primary">Save</button>
                     </form>
                 </div>
             </div>
@@ -247,6 +292,97 @@
                 })
                 .catch(error => console.error('Error:', error));
         }
+
+        // Open Edit Buyer Modal
+        const editBuyerModal = new bootstrap.Modal(document.getElementById('editBuyerModal'));
+        const editBuyerForm = document.getElementById('edit-buyer-form');
+        const editBuyerName = document.getElementById('edit-buyer-name');
+        const editBuyerPreferredCompanies = document.getElementById('edit-buyer-preferred-companies');
+        const editBuyerBudget = document.getElementById('edit-buyer-budget');
+        const editBuyerMaxPrice = document.getElementById('edit-buyer-max-price');
+        const editBuyerLatestDate = document.getElementById('edit-buyer-latest-date');
+
+        const openEditBuyerModal = (buyer) => {
+            editBuyerName.value = buyer.name;
+            editBuyerPreferredCompanies.value = buyer.preferences.preferred_company;
+            editBuyerBudget.value = buyer.preferences.budget;
+            editBuyerMaxPrice.value = buyer.constraints.max_price;
+            editBuyerLatestDate.value = buyer.constraints.last_date;
+            console.log(buyer);
+            editBuyerModal.show();
+        }
+
+        // Event listener on buyer list
+        document.querySelectorAll('#buyer-list span').forEach(card => {
+            card.addEventListener('click', function () {
+                const buyerName = card.getAttribute('data-id');
+                const buyer = buyers.find(buyer => buyer.name === buyerName);
+                openEditBuyerModal(buyer);
+            });
+        });
+
+        // Save Edited Buyer
+        editBuyerForm.addEventListener('submit', function (e) {
+            e.preventDefault();
+            const buyerName = editBuyerName.value;
+            const buyerPreferredCompanies = editBuyerPreferredCompanies.value;
+            const buyerBudget = editBuyerBudget.value;
+            const buyerMaxPrice = editBuyerMaxPrice.value;
+            const buyerLatestDate = editBuyerLatestDate.value;
+
+            const data = {
+                agent_id: buyerName,
+                preferred_companies: buyerPreferredCompanies,
+                budget: buyerBudget,
+                max_price: buyerMaxPrice,
+                latest_date: buyerLatestDate
+            };
+
+            fetch('/buyer/edit', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(data)
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    alert('Buyer updated successfully!');
+                    editBuyerModal.hide();
+                } else {
+                    alert('Error updating buyer: ' + data.message);
+                }
+            })
+            .catch(error => console.error('Error:', error));
+        });
+
+        // Remove Buyer
+        document.querySelectorAll('.remove-buyer-icon').forEach(icon => {
+            icon.addEventListener('click', function () {
+                const buyerName = icon.getAttribute('data-id');
+                const data = {
+                    agent_id: buyerName
+                };
+
+                fetch('/buyer/remove', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(data)
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === 'success') {
+                        alert('Buyer removed successfully!');
+                    } else {
+                        alert('Error removing buyer: ' + data.message);
+                    }
+                })
+                .catch(error => console.error('Error:', error));
+            });
+        });
 
     </script>
 </body>

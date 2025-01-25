@@ -1,3 +1,4 @@
+from logs.logger import Logger
 from negotitation.strategy import buyer_evaluate_offer
 
 
@@ -41,50 +42,50 @@ class BuyerAgent:
 
         @return: Final negotiation result
         """
-        print(f"Buyer {self.name} starts negotiation with Supplier {supplier.name} for service '{service_name}'.")
+        Logger.log(f"Buyer {self.name} starts negotiation with Supplier {supplier.name} for service '{service_name}'.")
         exchanges = 0  # Track the number of exchanges
 
         while exchanges < max_exchanges:
             exchanges += 1
-            print(f"\n--- Exchange {exchanges} ---")
+            Logger.log(f"\n--- Exchange {exchanges} ---")
 
             # Supplier evaluates the offer
             response = supplier.negotiate(self, offer)
 
             if response["status"] == "accepted":
-                print(f"Buyer {self.name}: Offer accepted by Supplier {supplier.name}.")
+                Logger.log(f"Buyer {self.name}: Offer accepted by Supplier {supplier.name}.")
                 return {"status": "accepted", "final_offer": offer, "exchanges": exchanges}
 
             elif response["status"] == "rejected":
-                print(f"Buyer {self.name}: Offer rejected by Supplier {supplier.name}. Reason: {response['reason']}")
+                Logger.log(f"Buyer {self.name}: Offer rejected by Supplier {supplier.name}. Reason: {response['reason']}")
                 return {"status": "rejected", "exchanges": exchanges}
 
             elif response["status"] == "counter_offer":
                 counter_offer = response["offer"]
-                print(f"Buyer {self.name}: Counter offer received: {counter_offer}.")
+                Logger.log(f"Buyer {self.name}: Counter offer received: {counter_offer}.")
 
                 # Buyer evaluates the counter offer
                 buyer_response = buyer_evaluate_offer(self.constraints, self.preferences, counter_offer)
 
                 if buyer_response["status"] == "accepted":
-                    print(f"Buyer {self.name}: Counter offer accepted.")
+                    Logger.log(f"Buyer {self.name}: Counter offer accepted.")
                     return {"status": "accepted", "final_offer": counter_offer, "exchanges": exchanges}
 
                 elif buyer_response["status"] == "rejected":
-                    print(f"Buyer {self.name}: Counter offer rejected. Reason: {buyer_response['reason']}")
+                    Logger.log(f"Buyer {self.name}: Counter offer rejected. Reason: {buyer_response['reason']}")
                     return {"status": "rejected", "exchanges": exchanges}
 
                 elif buyer_response["status"] == "counter_offer":
                     # Update the offer with the new counter offer
                     offer = buyer_response["offer"]
-                    print(f"Buyer {self.name}: New counter offer proposed: {offer}.")
+                    Logger.log(f"Buyer {self.name}: New counter offer proposed: {offer}.")
 
             else:
-                print(f"Buyer {self.name}: Unexpected response from Supplier {supplier.name}.")
+                Logger.log(f"Buyer {self.name}: Unexpected response from Supplier {supplier.name}.")
                 return {"status": "error", "exchanges": exchanges}
 
 
 
         # Negotiation interrupted after reaching the max exchanges
-        print(f"Buyer {self.name}: Negotiation interrupted after {exchanges} exchanges.")
+        Logger.log(f"Buyer {self.name}: Negotiation interrupted after {exchanges} exchanges.")
         return {"status": "interrupted", "reason": "Max exchanges reached", "exchanges": exchanges}
