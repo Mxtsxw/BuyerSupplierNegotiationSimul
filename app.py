@@ -20,6 +20,7 @@ default_supplier = SupplierAgent(name="Supplier1",
 
 default_buyer = BuyerAgent(
     name="Buyer1",
+    offer=300,
     constraints={
         "max_price": 800,
         "destination": DestinationEnum.PARIS,
@@ -45,9 +46,15 @@ def index():
 
 @app.route('/negotiate', methods=['GET'])
 def negotiate():
-    offer = {"name": "flight_1", "type": "flight", "price": 300}
 
-    Logger.log(default_buyer.negotiate(default_supplier, "flight", offer))
+    buyer_id = request.args.get('buyer_id')
+    service_id = request.args.get('service_id')
+    buyer = next((b for b in buyers_list if b.id == buyer_id), None)
+    service = next((s for s in default_supplier.services if s["id"] == service_id), None)
+    
+    offer = {"name": service['name'], "type":service['type'] , "price": buyer.offer}
+
+    Logger.log(buyer.negotiate(default_supplier, service['name'] , offer))
 
     return render_template(
         'index.html',
@@ -59,17 +66,30 @@ def negotiate():
 @app.route("/logs/clear", methods=['GET'])
 def clear_logs():
     Logger.clear()
-    return render_template(
-        'index.html',
-        supplier=default_supplier.to_dict(),
-        buyers=[b.to_dict() for b in buyers_list],
-        logs=Logger.logs
-    )
+    return redirect('/')
+
+@app.route("/service/edit", methods=['POST'])
+def edit_service():
+    service_id = request.form.get('edit-service-id')
+    service_name = request.form.get('edit-service-name')
+    service_type = request.form.get('edit-service-type')
+    service_destination = request.form.get('edit-service-destination')
+    service_price = request.form.get('edit-service-price')
+
+    for service in default_supplier.services:
+        if service["id"] == service_id:
+            service["name"] = service_name
+            service["type"] = service_type
+            service["destination"] = service_destination
+            service["price"] = float(service_price)
+            break
+    return redirect('/')
 
 @app.route("/buyer/add", methods=['POST'])
 def add_buyer():
     buyer_name = request.form.get('buyer_name')
     max_price = request.form.get('max_price')
+    offered_price= request.form.get('offer')
     destination = request.form.get('destination')
     last_date = request.form.get('buyer_last_date')
     budget = request.form.get('budget')
@@ -77,6 +97,7 @@ def add_buyer():
 
     buyer = BuyerAgent(
         name=buyer_name,
+        offer=float(offered_price),
         constraints={
             "max_price": float(max_price),
             "destination": destination,
@@ -113,6 +134,7 @@ def add_service():
 def edit_buyer():
     buyer_id = request.form.get('edit-buyer-id')
     buyer_name = request.form.get('edit-buyer-name')
+    offered_price = request.form.get('edit-buyer-offer')
     max_price = request.form.get('edit-buyer-max-price')
     destination = request.form.get('edit-buyer-destination')
     last_date = request.form.get('edit-buyer-latest-date')
@@ -122,6 +144,7 @@ def edit_buyer():
     for buyer in buyers_list:
         if buyer.id == buyer_id:
             buyer.name = buyer_name
+            buyer.offer = float(offered_price)
             buyer.constraints = {
                 "max_price": float(max_price),
                 "destination": destination,

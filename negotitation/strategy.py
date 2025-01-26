@@ -14,7 +14,7 @@ def supplier_evaluate_offer(service, offer):
     """
 
     # TODO : Voir si offre supérieur au prix => refus ??
-    if abs(offer["price"] - service["price"]) / service["price"] > 0.4:
+    if (service["price"] - offer["price"]) / service["price"] > 0.4:
         return {"status": "rejected", "reason": "Offer too far from expected price"}
     elif offer["price"] < service["price"]:
         counter_price = min(offer["price"] * 1.05, service["price"])
