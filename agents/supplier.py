@@ -15,6 +15,10 @@ class SupplierAgent:
 
     def get_services(self):
         return self.services
+    
+    def remove_service(self, service_id):
+        self.services = [s for s in self.services if s["id"] != service_id]
+        
 
     def to_dict(self):
         return {

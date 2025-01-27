@@ -1,5 +1,6 @@
 from logs.logger import Logger
 from negotitation.strategy import buyer_evaluate_offer
+import uuid
 
 
 class BuyerAgent:
@@ -7,14 +8,18 @@ class BuyerAgent:
     Base class for buyers
     """
 
-    def __init__(self, name=None, preferences=None, constraints=None):
+    def __init__(self, name=None, preferences=None, constraints=None, offer=None):
         self.name = name
+        self.id = str(uuid.uuid4())
         self.constraints = constraints
         self.preferences = preferences
+        self.offer = offer
 
     def to_dict(self):
         return {
             'name': self.name,
+            'id': self.id,
+            'offer': self.offer,
             'constraints': self.constraints,
             'preferences': self.preferences
         }
