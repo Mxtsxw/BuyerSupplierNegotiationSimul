@@ -32,7 +32,48 @@ default_buyer = BuyerAgent(
     }
 )
 
-buyers_list = [default_buyer]
+#buyers_list = [default_buyer]
+buyers_list = [
+        BuyerAgent(
+            name="Buyer1",
+            offer=300,
+            constraints={
+                "max_price": 800,
+                "destination": DestinationEnum.PARIS,
+                "last_date": "2021-12-01"
+            },
+            preferences={
+                "budget": 500,
+                "preferred_company": CompanyEnum.RAYAN_AIR
+            }
+        ),
+        BuyerAgent(
+            name="Buyer2",
+            offer=150,
+            constraints={
+                "max_price": 700,
+                "destination": DestinationEnum.PARIS,
+                "last_date": "2021-12-01"
+            },
+            preferences={
+                "budget": 200,
+                "preferred_company": CompanyEnum.AIR_FRANCE
+            }
+        ),
+        BuyerAgent(
+            name="Buyer3",
+            offer=100,
+            constraints={
+                "max_price": 900,
+                "destination": DestinationEnum.PARIS,
+                "last_date": "2021-12-01"
+            },
+            preferences={
+                "budget": 150,
+                "preferred_company": CompanyEnum.RAYAN_AIR
+            }
+        )
+    ]
 
 @app.route('/', methods=['GET'])
 def index():
@@ -173,14 +214,21 @@ def remove_service():
     default_supplier.remove_service(service_id)
     return redirect('/')
 
+
+
 @app.route("/coalition", methods=['GET'])
 def coalition():
     # Find the optimal coalition
-    best_coalition, best_value = find_optimal_coalition_IDP(buyers_list)
-    Logger.log()
+    best_coalition, best_value, message = find_optimal_coalition_IDP(buyers_list)
+    Logger.log(message)
+    Logger.log("=== Résultat Optimal ===")
+    Logger.log(f"Coalition optimale: {[agent.name for agent in best_coalition]}")
+    Logger.log(f"Valeur optimale: {best_value}")
     return render_template(
-        'coalition.html',
-        buyers=[b.to_dict() for b in buyers_list]
+        'index.html',
+        supplier=default_supplier.to_dict(),
+        buyers=[b.to_dict() for b in buyers_list],
+        logs=Logger.logs
     )
 
 if __name__ == '__main__':

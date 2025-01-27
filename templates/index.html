@@ -44,12 +44,13 @@
                 <div id="log" class="border rounded bg-light p-2" style="height: 300px; overflow-y: scroll;">
                     <!-- Contains logs output -->
                     {% for log in logs %}
-                        <p>{{ log }}</p>
+                        <p>{{ log | safe }}</p>
                     {% endfor %}
                 </div>
                 <div class="mt-4">
                     <button id="clear-logs-btn" class="btn btn-danger" onclick="window.location.href='/'">Clear Logs</button>
                     <button id="negotiate-btn" class="btn btn-primary" >Start Negotiation</button>
+                    <button id="negotiate-btn" class="btn btn-success" onclick="window.location.href='/coalition'">Start Coalition</button>
                 </div>
             </div>
 
@@ -440,7 +441,39 @@
         window.location.href = url;
     });
 
-        
+     
+    
+
+
+document.getElementById('add-buyer-form').addEventListener('submit', function(event) {
+  const offer = parseFloat(document.getElementById('offer').value);
+  const budget = parseFloat(document.getElementById('buyer-budget').value);
+  const maxPrice = parseFloat(document.getElementById('buyer-max-price').value);
+
+  if (offer > budget) {
+    event.preventDefault(); // Prevent form submission
+    alert('Offered Price cannot be greater than Budget !');
+
+    } else if (budget > maxPrice) {
+    event.preventDefault(); // Prevent form submission
+    alert('Budget cannot be greater than Max Price !');
+  }
+});
+
+document.getElementById('edit-buyer-form').addEventListener('submit', function(event) {
+  const offer = parseFloat(document.getElementById('edit-buyer-offer').value);
+  const budget = parseFloat(document.getElementById('edit-buyer-budget').value);
+  const maxPrice = parseFloat(document.getElementById('edit-buyer-max-price').value);
+
+  if (offer > budget) {
+    event.preventDefault(); // Prevent form submission
+    alert('Offered Price cannot be greater than Budget !');
+
+    } else if (budget > maxPrice) {
+    event.preventDefault(); // Prevent form submission
+    alert('Budget cannot be greater than Max Price !');
+  }
+});
 
     </script>
 </body>

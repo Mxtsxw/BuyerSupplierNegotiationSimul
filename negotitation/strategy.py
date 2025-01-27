@@ -117,17 +117,17 @@ def find_optimal_coalition_IDP(agents):
     n = len(agents)
     best_coalition = []
     best_value = -float('inf')
-
+    message = ""
     # Explorer toutes les coalitions possibles
     for size in range(1, n + 1):  # Taille de la coalition (de 1 à n agents)
         for coalition in itertools.combinations(agents, size):  # Toutes les combinaisons de taille 'size'
             value = coalition_value(coalition)
-            Logger.log(f"Coalition: {[agent.name for agent in coalition]}, Value: {value}")
+            message+=(f"Coalition: {[agent.name for agent in coalition]}, Value: {value}<br>")
             if value > best_value:
                 best_value = value
                 best_coalition = coalition
 
-    return best_coalition, best_value
+    return best_coalition, best_value, message
 
 
 
