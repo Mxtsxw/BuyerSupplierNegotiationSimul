@@ -95,7 +95,10 @@ def negotiate():
     
     offer = {"name": service['name'], "type":service['type'] , "price": buyer.offer}
 
-    Logger.log(buyer.negotiate(default_supplier, service['name'] , offer))
+    if service['destination'] != buyer.constraints["destination"]:
+        Logger.log(f"Offer rejected by supplier due to different destination")
+    else:
+        Logger.log(buyer.negotiate(default_supplier, service['name'] , offer))
 
     return render_template(
         'index.html',
